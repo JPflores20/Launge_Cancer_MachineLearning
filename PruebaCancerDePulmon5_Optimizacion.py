@@ -5,12 +5,8 @@ import seaborn as sns
 import math
 import warnings
 
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
 import xgboost as xgb
-import lightgbm as lgb
 from catboost import CatBoostClassifier
 from sklearn.neural_network import MLPClassifier
 
@@ -40,14 +36,13 @@ caracteristicas_entrenamiento, caracteristicas_prueba, etiquetas_entrenamiento, 
 )
 
 escalador = StandardScaler()
-caracteristicas_entrenamiento_escaladas = pd.DataFrame(escalador.fit_transform(caracteristicas_entrenamiento), columns=caracteristicas_x.columns)
-caracteristicas_prueba_escaladas = pd.DataFrame(escalador.transform(caracteristicas_prueba), columns=caracteristicas_x.columns)
+caracteristicas_entrenamiento_escaladas = caracteristicas_entrenamiento.copy()
+caracteristicas_prueba_escaladas = caracteristicas_prueba.copy()
 
-modelo_regresion_logistica = LogisticRegression(random_state=42, max_iter=1000, class_weight='balanced')
-modelo_maquina_soporte_vectorial = SVC(probability=True, random_state=42, class_weight='balanced')
-modelo_k_vecinos = KNeighborsClassifier(n_neighbors=5)
+caracteristicas_entrenamiento_escaladas['AGE'] = escalador.fit_transform(caracteristicas_entrenamiento[['AGE']])
+caracteristicas_prueba_escaladas['AGE'] = escalador.transform(caracteristicas_prueba[['AGE']])
+
 modelo_xgboost = xgb.XGBClassifier(eval_metric='logloss', random_state=42)
-modelo_lightgbm = lgb.LGBMClassifier(random_state=42, verbose=-1)
 
 print("--- INICIANDO BÚSQUEDA DE HIPERPARÁMETROS PARA LOS TOP 3 MODELOS ---")
 print("Esto puede tardar un par de minutos...\n")
@@ -100,16 +95,13 @@ print("Entrenando Red Neuronal (MLP)...\n")
 busqueda_red_neuronal.fit(caracteristicas_entrenamiento_escaladas, etiquetas_entrenamiento)
 
 diccionario_modelos = {
-    "Regresión Logística": modelo_regresion_logistica,
     "Random Forest (Opt)": busqueda_random_forest.best_estimator_,
-    "SVM (Kernel RBF)": modelo_maquina_soporte_vectorial,
-    "K-Vecinos (KNN)": modelo_k_vecinos,
     "XGBoost": modelo_xgboost,
-    "LightGBM": modelo_lightgbm,
     "CatBoost (Opt)": busqueda_catboost.best_estimator_,
     "Red Neuronal (MLP-Opt)": busqueda_red_neuronal.best_estimator_
 }
 
+predicciones_almacenadas = {}
 resultados_modelos = []
 print(f"--- ENTRENANDO Y EVALUANDO {len(diccionario_modelos)} MODELOS ---\n")
 
@@ -120,11 +112,16 @@ for nombre_modelo, modelo_actual in diccionario_modelos.items():
             
         predicciones_etiquetas = modelo_actual.predict(caracteristicas_prueba_escaladas)
         
+        probabilidades_prediccion = None
+        area_bajo_curva = 0.0
         if hasattr(modelo_actual, "predict_proba"):
             probabilidades_prediccion = modelo_actual.predict_proba(caracteristicas_prueba_escaladas)[:, 1]
             area_bajo_curva = roc_auc_score(etiquetas_prueba, probabilidades_prediccion)
-        else:
-            area_bajo_curva = 0.0
+            
+        predicciones_almacenadas[nombre_modelo] = {
+            'etiquetas': predicciones_etiquetas,
+            'probabilidades': probabilidades_prediccion
+        }
             
         precision_modelo = accuracy_score(etiquetas_prueba, predicciones_etiquetas)
         
@@ -133,26 +130,26 @@ for nombre_modelo, modelo_actual in diccionario_modelos.items():
     except Exception as error_entrenamiento:
         print(f"❌ Error con {nombre_modelo}: {error_entrenamiento}")
 
-dataframe_resultados = pd.DataFrame(resultados_modelos).sort_values(by='Accuracy', ascending=False)
+dataframe_resultados = pd.DataFrame(resultados_modelos).sort_values(by=['Accuracy', 'AUC'], ascending=[False, False])
 print("\n--- RESULTADOS DE LOS MODELOS ---")
 print(dataframe_resultados.to_string(index=False))
 
 sns.set_theme(style="whitegrid")
 
-plt.figure(figsize=(14, 6))
+plt.figure(figsize=(10, 6))
 dataframe_derretido = dataframe_resultados.melt(id_vars="Modelo", var_name="Métrica", value_name="Score")
 sns.barplot(x="Modelo", y="Score", hue="Métrica", data=dataframe_derretido, palette="viridis")
-plt.title("Comparativa de Rendimiento de Todos los Modelos (Accuracy vs AUC)", fontsize=14, fontweight='bold')
+plt.title("Comparativa de Rendimiento (Modelos Finales)", fontsize=14, fontweight='bold')
 plt.ylim(0.7, 1.05)
-plt.xticks(rotation=20, ha='right')
+plt.xticks(rotation=0)
 plt.legend(loc='lower right')
 plt.tight_layout()
 plt.show()
 
 plt.figure(figsize=(10, 8))
-for nombre_modelo, modelo_actual in diccionario_modelos.items():
-    if hasattr(modelo_actual, "predict_proba"):
-        probabilidades_prediccion = modelo_actual.predict_proba(caracteristicas_prueba_escaladas)[:, 1]
+for nombre_modelo, datos_prediccion in predicciones_almacenadas.items():
+    probabilidades_prediccion = datos_prediccion['probabilidades']
+    if probabilidades_prediccion is not None:
         tasa_falsos_positivos, tasa_verdaderos_positivos, umbrales = roc_curve(etiquetas_prueba, probabilidades_prediccion)
         area_bajo_curva = roc_auc_score(etiquetas_prueba, probabilidades_prediccion)
         plt.plot(tasa_falsos_positivos, tasa_verdaderos_positivos, label=f'{nombre_modelo} (AUC = {area_bajo_curva:.3f})', linewidth=2)
@@ -160,21 +157,18 @@ for nombre_modelo, modelo_actual in diccionario_modelos.items():
 plt.plot([0, 1], [0, 1], 'k--', label='Azar')
 plt.xlabel('Tasa de Falsos Positivos')
 plt.ylabel('Tasa de Verdaderos Positivos')
-plt.title('Curvas ROC Comparativas (Todos los Modelos)', fontsize=14, fontweight='bold')
+plt.title('Curvas ROC Comparativas (Modelos Finales)', fontsize=14, fontweight='bold')
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-numero_total_modelos = len(diccionario_modelos)
-columnas_grafica = 4
-filas_grafica = math.ceil(numero_total_modelos / columnas_grafica)
-
-figura, ejes_graficos = plt.subplots(filas_grafica, columnas_grafica, figsize=(18, 4 * filas_grafica))
+# Matrices de Confusión (Cuadrícula 2x2)
+figura, ejes_graficos = plt.subplots(2, 2, figsize=(10, 8))
 ejes_graficos = ejes_graficos.flatten()
 
-for indice_modelo, (nombre_modelo, modelo_actual) in enumerate(diccionario_modelos.items()):
-    predicciones_etiquetas = modelo_actual.predict(caracteristicas_prueba_escaladas)
+for indice_modelo, (nombre_modelo, datos_prediccion) in enumerate(predicciones_almacenadas.items()):
+    predicciones_etiquetas = datos_prediccion['etiquetas']
     matriz_confusion = confusion_matrix(etiquetas_prueba, predicciones_etiquetas)
     
     sns.heatmap(matriz_confusion, annot=True, fmt='d', cmap='Blues', cbar=False, ax=ejes_graficos[indice_modelo],
@@ -183,10 +177,7 @@ for indice_modelo, (nombre_modelo, modelo_actual) in enumerate(diccionario_model
     ejes_graficos[indice_modelo].set_xlabel('Predicción del Modelo')
     ejes_graficos[indice_modelo].set_ylabel('Realidad')
 
-for indice_vacio in range(indice_modelo + 1, len(ejes_graficos)):
-    ejes_graficos[indice_vacio].axis('off')
-
-plt.suptitle("Matrices de Confusión de Todos los Modelos", fontsize=16, fontweight='bold', y=1.02)
+plt.suptitle("Matrices de Confusión (Modelos Finales)", fontsize=16, fontweight='bold', y=1.02)
 plt.tight_layout()
 plt.show()
 

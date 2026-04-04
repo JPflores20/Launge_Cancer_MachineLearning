@@ -126,9 +126,9 @@ for nombre_modelo, modelo_actual in diccionario_modelos.items():
         precision_modelo = accuracy_score(etiquetas_prueba, predicciones_etiquetas)
         
         resultados_modelos.append({'Modelo': nombre_modelo, 'Accuracy': precision_modelo, 'AUC': area_bajo_curva})
-        print(f"✅ {nombre_modelo}: Accuracy = {precision_modelo:.4f} | AUC = {area_bajo_curva:.4f}")
+        print(f"(Aceptado) {nombre_modelo}: Accuracy = {precision_modelo:.4f} | AUC = {area_bajo_curva:.4f}")
     except Exception as error_entrenamiento:
-        print(f"❌ Error con {nombre_modelo}: {error_entrenamiento}")
+        print(f"(Denegado) Error con {nombre_modelo}: {error_entrenamiento}")
 
 dataframe_resultados = pd.DataFrame(resultados_modelos).sort_values(by=['Accuracy', 'AUC'], ascending=[False, False])
 print("\n--- RESULTADOS DE LOS MODELOS ---")

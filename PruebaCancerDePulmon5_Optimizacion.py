@@ -122,9 +122,7 @@ for nombre_modelo, modelo_actual in diccionario_modelos.items():
             'etiquetas': predicciones_etiquetas,
             'probabilidades': probabilidades_prediccion
         }
-            
         precision_modelo = accuracy_score(etiquetas_prueba, predicciones_etiquetas)
-        
         resultados_modelos.append({'Modelo': nombre_modelo, 'Accuracy': precision_modelo, 'AUC': area_bajo_curva})
         print(f"(Aceptado) {nombre_modelo}: Accuracy = {precision_modelo:.4f} | AUC = {area_bajo_curva:.4f}")
     except Exception as error_entrenamiento:

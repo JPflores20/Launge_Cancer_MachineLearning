@@ -1,4 +1,4 @@
-# Predicción de Cáncer de Pulmón con Machine Learning
+# Predicción de Cáncer de Pulmón con Técnicas de Aprendizaje Automático
 
 Este proyecto desarrolla, entrena y compara 4 modelos de Machine Learning distintos para predecir la probabilidad de padecer cáncer de pulmón basándose en síntomas clínicos y características demográficas (edad y género).
 

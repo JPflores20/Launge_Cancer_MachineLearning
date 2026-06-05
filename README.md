@@ -1,17 +1,13 @@
 # Predicción de Cáncer de Pulmón con Machine Learning
 
-Este proyecto desarrolla, entrena y compara 8 modelos de Machine Learning distintos para predecir la probabilidad de padecer cáncer de pulmón basándose en síntomas clínicos y características demográficas (edad y género).
+Este proyecto desarrolla, entrena y compara 4 modelos de Machine Learning distintos para predecir la probabilidad de padecer cáncer de pulmón basándose en síntomas clínicos y características demográficas (edad y género).
 
 ## Modelos Implementados
 
-Se utilizan los siguientes 8 algoritmos para clasificación, incluyendo 3 que se someten a un proceso de optimización de hiperparámetros (Top 3):
+Se utilizan los siguientes 4 algoritmos para clasificación, enfocándose en modelos avanzados de ensamble y redes neuronales con optimización de hiperparámetros:
 
-1.  **Regresión Logística**
-2.  **Máquinas de Soporte Vectorial (SVM con Kernel RBF)**
-3.  **K-Vecinos Más Cercanos (KNN)**
-4.  **XGBoost**
-5.  **LightGBM**
-6.  _Opciones Optimizadas mediante Búsqueda Aleatoria (RandomizedSearchCV):_
+1.  **XGBoost**
+2.  _Opciones Optimizadas mediante Búsqueda Aleatoria (RandomizedSearchCV):_
     - **Random Forest (Opt)**
     - **CatBoost (Opt)**
     - **Red Neuronal Artificial (MLP-Opt)**
@@ -41,8 +37,19 @@ El conjunto de datos debe contener, al menos, las siguientes variables:
 - **Visualización Científica (Gráficos para reportes):**
   - _Comparativa de Rendimiento:_ Un gráfico de barras que compara Accuracy vs AUC para cada modelo.
   - _Curvas ROC Comparativas:_ Superposición de todas las curvas ROC en un único gráfico para evaluar la sensibilidad frente a la especificidad.
-  - _Matrices de Confusión:_ Un mosaico que muestra la matriz de confusión (Verdaderos Positivos, Falsos Positivos, etc.) generada individualmente por cada uno de los 8 aproximaciones.
+  - _Matrices de Confusión:_ Un mosaico (Cuadrícula 2x2) que muestra la matriz de confusión (Verdaderos Positivos, Falsos Positivos, etc.) generada individualmente por cada uno de los 4 modelos.
   - _Importancia de las Variables:_ Dos gráficos de barras que exhiben qué síntomas influyen más en las predicciones en los modelos de árbol más sofisticados resultantes (Random Forest vs CatBoost).
+
+## Resultados Obtenidos
+
+Basado en la ejecución del conjunto de datos de prueba (20%), el rendimiento de los modelos evaluados (ordenados por Accuracy) fue el siguiente:
+
+| Modelo | Accuracy | AUC |
+| :--- | :---: | :---: |
+| **CatBoost (Opt)** | 0.9194 | 0.9560 |
+| **Random Forest (Opt)** | 0.9032 | 0.9433 |
+| **XGBoost** | 0.8871 | 0.9236 |
+| **Red Neuronal (MLP-Opt)** | 0.8548 | 0.9352 |
 
 ## Requisitos
 

@@ -44,7 +44,7 @@ caracteristicas_prueba_escaladas['AGE'] = escalador.transform(caracteristicas_pr
 
 modelo_xgboost = xgb.XGBClassifier(eval_metric='logloss', random_state=42)
 
-print("--- INICIANDO BÚSQUEDA DE HIPERPARÁMETROS PARA LOS TOP 3 MODELOS ---")
+print("--- INICIANDO BÚSQUEDA DE HIPERPARÁMETROS PARA LOS MODELOS ---")
 print("Esto puede tardar un par de minutos...\n")
 
 parametros_random_forest = {'n_estimators': [100, 200, 300, 500], 'max_depth': [None, 10, 20, 30], 'min_samples_split': [2, 5, 10]}
